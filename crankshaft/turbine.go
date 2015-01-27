@@ -135,6 +135,8 @@ func provideStatWriter() StatWriter {
 		statClient = GetStatsClient()
 	case "influxdb":
 		statClient = GetInfluxClient()
+	case "stackdriver":
+		statClient = GetStackDriverClient()
 	}
 
 	return statClient

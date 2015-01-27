@@ -8,6 +8,7 @@ type Config struct {
 	BackendType string
 	Statsd      StatsDConfig
 	InfluxDB    InfluxDbConfig
+	StackDriver StackDriverConfig
 }
 
 type StatsDConfig struct {
@@ -22,6 +23,10 @@ type InfluxDbConfig struct {
 	Username string
 	Password string
 	Database string
+}
+
+type StackDriverConfig struct {
+	ApiKey string
 }
 
 type EventChannel chan *TurbineEvent

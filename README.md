@@ -49,16 +49,19 @@ port = 8086
 username = "crankshaft"
 password = "test"
 database = "crankshaft"
+
+[stackdriver]
+api_key = "YOUR_API_KEY"
 ```
 
 Build the project
 
     go build
-  
+
 And deploy the resulting binary & config
 
     ./crankshaftd
-    
+
 Or run with a different config
 
     ./crankshaftd dev.toml
