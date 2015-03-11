@@ -1,17 +1,20 @@
 package crankshaft
 
 import (
-	"github.com/cactus/go-statsd-client/statsd"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/cactus/go-statsd-client/statsd"
 )
 
-type statsdBackend struct {
+// StatsdBackend is a wrapper around the Statsd client
+type StatsdBackend struct {
 	*statsd.Client
 }
 
-func GetStatsClient() *statsdBackend {
+// GetStatsClient returns the statsd
+func GetStatsClient() *StatsdBackend {
 	backend := config.Statsd.Host + ":" + strconv.Itoa(config.Statsd.Port)
 	prefix := config.Statsd.Prefix
 
@@ -22,17 +25,20 @@ func GetStatsClient() *statsdBackend {
 		log.Println("Error creating StatsD client")
 	}
 
-	return &statsdBackend{client}
+	return &StatsdBackend{client}
 }
 
-func (client *statsdBackend) WriteEvent(event *TurbineEvent) {
+// WriteEvent persists a turbine event into statsd
+func (client *StatsdBackend) WriteEvent(event *TurbineEvent) {
 	name := event.data["name"].(string)
 	resourceType := event.data["type"].(string)
 
 	for k, v := range event.data {
 		// This are the only properties we want per command/pool.
-		if !strings.HasPrefix(k, "rollingCount") && !strings.HasPrefix(k, "current") &&
-			!strings.HasPrefix(k, "isCircuitBreakerOpen") && !strings.HasPrefix(k, "latencyExecute" &&
+		if !strings.HasPrefix(k, "rollingCount") &&
+			!strings.HasPrefix(k, "current") &&
+			!strings.HasPrefix(k, "isCircuitBreakerOpen") &&
+			!strings.HasPrefix(k, "latencyExecute") &&
 			!strings.HasPrefix(k, "latencyTotal") {
 			continue
 		}

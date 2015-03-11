@@ -3,14 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/xorlev/crankshaftd/crankshaft"
 	"os"
 	"strings"
+
+	"github.com/BurntSushi/toml"
+	"github.com/robzienert/crankshaftd/crankshaft"
 )
 
 var (
-	VERSION    = "0.0.2-alpha"
+	// VERSION of crankshaftd
+	VERSION    = "0.0.3-alpha"
 	configFile = flag.String("config", "config.toml", "Configuration file")
 	config     crankshaft.Config
 )

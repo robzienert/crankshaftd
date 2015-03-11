@@ -4,7 +4,7 @@ port = 80
 tls_enabled = false
 clusters = ["cluster1", "cluster2"]
 
-# Backend to stream updates to, 'influxdb' or 'statsd'
+# Backend to stream updates to, 'influxdb', 'statsd' or 'stackdriver'
 backendtype = "influxdb"
 
 [statsd]

@@ -16,6 +16,7 @@ import (
 
 var config Config
 
+// MonitorClusters is the entry point into monitoring a turbine stream.
 func MonitorClusters(conf Config) {
 	config = conf
 
@@ -28,7 +29,7 @@ func MonitorClusters(conf Config) {
 
 	// Start goroutines for each cluster
 	for i := range clusterList {
-		go turbine(eventChannel, strings.TrimSpace(clusterList[i]))
+		go turbine(eventChannel, strings.TrimSpace(config.Path), strings.TrimSpace(clusterList[i]))
 	}
 
 	// Get client (Influx or StatsD)
@@ -40,11 +41,11 @@ func MonitorClusters(conf Config) {
 	}
 }
 
-func turbine(c EventChannel, clusterName string) {
+func turbine(c EventChannel, turbinePath string, clusterName string) {
 	defer close(c)
 
 	for {
-		err := attachToTurbine(clusterName, c)
+		err := attachToTurbine(turbinePath, clusterName, c)
 		if err != nil {
 			log.Println("Turbine session ended with error", err, "restarting...")
 			time.Sleep(3 * time.Second) // wait
@@ -52,11 +53,11 @@ func turbine(c EventChannel, clusterName string) {
 	}
 }
 
-func attachToTurbine(clusterName string, c EventChannel) error {
+func attachToTurbine(turbinePath string, clusterName string, c EventChannel) error {
 	log.Println("Opening Turbine connection for", clusterName)
 
 	// TODO: urlencode
-	req, err := http.NewRequest("GET", "/turbine.stream?cluster="+clusterName, nil)
+	req, err := http.NewRequest("GET", turbinePath+"/turbine.stream?cluster="+clusterName, nil)
 
 	if err != nil {
 		log.Println("Error creating HTTP request", err)
@@ -94,7 +95,7 @@ func attachToTurbine(clusterName string, c EventChannel) error {
 		if strings.HasPrefix(s, "data: ") {
 			s = strings.TrimPrefix(s, "data: ")
 
-			data, err := unmarshalJson(s)
+			data, err := unmarshalJSON(s)
 
 			if err != nil {
 				log.Println("Error decoding JSON", err)
@@ -107,9 +108,9 @@ func attachToTurbine(clusterName string, c EventChannel) error {
 }
 
 func connectToTurbineServer() (net.Conn, error) {
-	turbineUrl := config.Host + ":" + strconv.Itoa(config.Port)
-	log.Println("Opening Turbine connection host:", turbineUrl)
-	conn, err := net.Dial("tcp", turbineUrl)
+	turbineURL := config.Host + ":" + strconv.Itoa(config.Port)
+	log.Println("Opening Turbine connection host:", turbineURL)
+	conn, err := net.Dial("tcp", turbineURL)
 
 	if config.TLSEnabled {
 		conn = tls.Client(conn, &tls.Config{})
@@ -118,7 +119,7 @@ func connectToTurbineServer() (net.Conn, error) {
 	return conn, err
 }
 
-func unmarshalJson(payload string) (map[string]interface{}, error) {
+func unmarshalJSON(payload string) (map[string]interface{}, error) {
 	var f map[string]interface{}
 	err := json.Unmarshal([]byte(payload), &f)
 
@@ -133,8 +134,6 @@ func provideStatWriter() StatWriter {
 		log.Fatal("Error:", config.BackendType, "is not a valid backend type")
 	case "statsd":
 		statClient = GetStatsClient()
-	case "influxdb":
-		statClient = GetInfluxClient()
 	case "stackdriver":
 		statClient = GetStackDriverClient()
 	}
