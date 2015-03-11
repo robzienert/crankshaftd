@@ -71,7 +71,7 @@ func attachToTurbine(turbinePath string, clusterName string, c EventChannel) err
 	}
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	conn.SetDeadline(time.Now().Add(30 * time.Second))
 	clientConn := httputil.NewClientConn(conn, nil)
 	resp, err := clientConn.Do(req)
 

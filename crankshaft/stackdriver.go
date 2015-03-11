@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -77,20 +78,25 @@ func (c *StackDriverClient) initTickRoutine() {
 			state = make(map[string]*metricSeries)
 			mutex.Unlock()
 
-			log.Println("Publishing metrics to StackDriver")
-			body, _ := json.Marshal(wrapper)
+			dataLen := len(wrapper.Data)
+			if dataLen > 0 {
+				log.Println("Publishing metrics to StackDriver:", dataLen)
+				body, _ := json.Marshal(wrapper)
 
-			req, err := http.NewRequest("POST", "https://custom-gateway.stackdriver.com/v1/custom", bytes.NewReader(body))
-			if err != nil {
-				log.Println("Error creating new request", err)
-			}
+				req, err := http.NewRequest("POST", "https://custom-gateway.stackdriver.com/v1/custom", bytes.NewReader(body))
+				if err != nil {
+					log.Println("Error creating new request", err)
+				}
 
-			req.Header.Add("Content-Type", "application/json")
-			req.Header.Add("x-stackdriver-key", c.apiKey)
+				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("x-stackdriver-key", c.apiKey)
 
-			_, err = c.http.Do(req)
-			if err != nil {
-				log.Println("Error publishing metrics to StackDriver", err)
+				_, err = c.http.Do(req)
+				if err != nil {
+					log.Println("Error publishing metrics to StackDriver", err)
+				}
+			} else {
+				log.Println("No metrics to publish")
 			}
 		}
 	}()
@@ -133,7 +139,7 @@ func (c *StackDriverClient) WriteEvent(event *TurbineEvent) {
 		case map[string]interface{}:
 			for pct, val := range v {
 				pctVal := int64(val.(float64))
-				name := statKey + "." + strings.Replace(pct, ".", "_", -1) + "_pct"
+				name := statKey + "_" + strings.Replace(pct, ".", "_", -1) + "pct"
 
 				writeToState(name, pctVal)
 			}
@@ -156,14 +162,17 @@ func (c *StackDriverClient) WriteEvent(event *TurbineEvent) {
 
 func buildStatKey(clusterName string, name string, resourceType string, key string) string {
 	var buffer bytes.Buffer
+	reg, err := regexp.Compile("[^A-Za-z0-9_]+")
+	if err != nil {
+		log.Fatal("Could not compile input scrub regex", err)
+	}
 
-	buffer.WriteString(strings.Replace(clusterName, ".", "_", -1))
+	buffer.WriteString("turbine_")
+	buffer.WriteString(clusterName)
 	buffer.WriteString("_")
 	buffer.WriteString(name)
 	buffer.WriteString("_")
-	buffer.WriteString(resourceType)
-	buffer.WriteString("_")
 	buffer.WriteString(key)
 
-	return buffer.String()
+	return reg.ReplaceAllString(buffer.String(), "_")
 }
