@@ -21,7 +21,7 @@ type StatsDConfig struct {
 
 // StackDriverConfig info
 type StackDriverConfig struct {
-	ApiKey string
+	APIKey string `toml:"api_key"`
 }
 
 type EventChannel chan *TurbineEvent

@@ -3,6 +3,7 @@ package crankshaft
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -44,7 +45,7 @@ var (
 
 // GetStackDriverClient is a constructor for the StackDriverClient type
 func GetStackDriverClient() *StackDriverClient {
-	apiKey := config.StackDriver.ApiKey
+	apiKey := config.StackDriver.APIKey
 	httpClient := &http.Client{}
 	ticker := time.NewTicker(time.Second * 60)
 
@@ -89,11 +90,21 @@ func (c *StackDriverClient) initTickRoutine() {
 				}
 
 				req.Header.Add("Content-Type", "application/json")
-				req.Header.Add("x-stackdriver-key", c.apiKey)
+				req.Header.Add("x-stackdriver-apikey", c.apiKey)
 
-				_, err = c.http.Do(req)
+				resp, err := c.http.Do(req)
 				if err != nil {
 					log.Println("Error publishing metrics to StackDriver", err)
+				}
+
+				log.Println("StackDriver", resp.Status)
+				if resp.StatusCode != 200 {
+					defer resp.Body.Close()
+					contents, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						log.Println("Error reading response from StackDriver", err)
+					}
+					log.Println(string(contents))
 				}
 			} else {
 				log.Println("No metrics to publish")
