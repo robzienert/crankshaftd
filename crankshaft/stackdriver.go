@@ -70,6 +70,7 @@ func (c *StackDriverClient) initTickRoutine() {
 			}
 			mutex.Lock()
 			for name, metrics := range state {
+				log.Println(name, metrics.total, metrics.occurrences)
 				wrapper.Data = append(wrapper.Data, &StackDriverDataPoint{
 					Name:        name,
 					Value:       int64(metrics.total / metrics.occurrences),
@@ -133,6 +134,11 @@ func (c *StackDriverClient) WriteEvent(event *TurbineEvent) {
 	name := event.data["name"].(string)
 	resourceType := event.data["type"].(string)
 
+	reportingHosts := 1.0
+	if _, ok := event.data["reportingHosts"]; ok {
+		reportingHosts = event.data["reportingHosts"].(float64)
+	}
+
 	for k, v := range event.data {
 		if !strings.HasPrefix(k, "rollingCount") && !strings.HasPrefix(k, "current") &&
 			!strings.HasPrefix(k, "isCircuitBreakerOpen") && !strings.HasPrefix(k, "latencyExecute") &&
@@ -149,7 +155,7 @@ func (c *StackDriverClient) WriteEvent(event *TurbineEvent) {
 			// ignored
 		case map[string]interface{}:
 			for pct, val := range v {
-				pctVal := int64(val.(float64))
+				pctVal := int64(val.(float64) / reportingHosts)
 				name := statKey + "_" + strings.Replace(pct, ".", "_", -1) + "pct"
 
 				writeToState(name, pctVal)
