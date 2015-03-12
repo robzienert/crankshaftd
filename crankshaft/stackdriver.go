@@ -88,6 +88,7 @@ func (c *StackDriverClient) initTickRoutine() {
 				req, err := http.NewRequest("POST", "https://custom-gateway.stackdriver.com/v1/custom", bytes.NewReader(body))
 				if err != nil {
 					log.Println("Error creating new request", err)
+					continue
 				}
 
 				req.Header.Add("Content-Type", "application/json")
@@ -96,6 +97,7 @@ func (c *StackDriverClient) initTickRoutine() {
 				resp, err := c.http.Do(req)
 				if err != nil {
 					log.Println("Error publishing metrics to StackDriver", err)
+					continue
 				}
 
 				log.Println("StackDriver", resp.Status)
